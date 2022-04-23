@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net"
 
-	"eqrx.net/service/journal"
+	"eqrx.net/journalr"
 	"eqrx.net/service/socket"
 	"github.com/go-logr/logr"
 )
@@ -28,7 +28,7 @@ import (
 type Service struct {
 	notify    *net.UnixConn
 	listeners []net.Listener
-	journal   *journal.Sink
+	journal   *journalr.Sink
 }
 
 // errNoListeners is raised when socket activation listeners are requested but none were found.
@@ -58,7 +58,7 @@ func New() (*Service, error) {
 		return nil, fmt.Errorf("systemd socket activation: %w", err)
 	}
 
-	journalSink, err := journal.NewSink()
+	journalSink, err := journalr.NewSink()
 	if err != nil {
 		return nil, fmt.Errorf("systemd journald: %w", err)
 	}

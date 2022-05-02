@@ -15,7 +15,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"net"
 
@@ -31,16 +30,13 @@ type Service struct {
 	journal   *journalr.Sink
 }
 
-// errNoListeners is raised when socket activation listeners are requested but none were found.
-var errNoListeners = errors.New("no listeners passed by systemd")
-
 // Journal returns a logr.Logger that writes structured logs to the systemd journal.
 func (s Service) Journal() logr.Logger { return logr.New(s.journal) }
 
 // Listeners returns listeners passed by systemd via socket activation.
 func (s Service) Listeners() ([]net.Listener, error) {
 	if len(s.listeners) == 0 {
-		return s.listeners, errNoListeners
+		return s.listeners, fmt.Errorf("no listeners passed by systemd")
 	}
 
 	return s.listeners, nil

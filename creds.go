@@ -14,7 +14,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -24,14 +23,12 @@ import (
 
 const credDirEnvName = "CREDENTIALS_DIRECTORY"
 
-var errCredDirNotSet = errors.New("env CREDENTIALS_DIRECTORY not set")
-
 // CredsDir returns the path to the directory where systemd credentials reside.
 // An error is returned if systemd did not st the env var CREDENTIALS_DIRECTORY.
 func CredsDir() (string, error) {
 	credsDir, ok := os.LookupEnv(credDirEnvName)
 	if !ok {
-		return "", errCredDirNotSet
+		return "", fmt.Errorf("env CREDENTIALS_DIRECTORY not set")
 	}
 
 	return credsDir, nil

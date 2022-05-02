@@ -15,7 +15,6 @@
 package socket
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -34,13 +33,6 @@ const (
 	listenerNamesEnvName = "LISTEN_FDNAMES"
 	// listenFdsStart indicates which fd index is the first socket passed by systemd.
 	listenFdsStart = 3
-)
-
-var (
-	// errListenerCountNotSet indicates that some envs are set but not LISTEN_FDS.
-	errListenerCountNotSet = errors.New("env LISTEN_FDS not set")
-	// errListenerNamesNotSet indicates that some envs are set but not LISTEN_FDNAMES.
-	errListenerNamesNotSet = errors.New("env LISTEN_FDNAMES not set")
 )
 
 // Listeners returnes listeners passed by systemd.
@@ -110,7 +102,7 @@ func files() ([]*os.File, error) {
 
 	listenerNamesStr, listenerNamesSet := os.LookupEnv(listenerNamesEnvName)
 	if !listenerNamesSet {
-		return []*os.File{}, errListenerNamesNotSet
+		return []*os.File{}, fmt.Errorf("env LISTEN_FDNAMES not set")
 	}
 
 	if err := os.Unsetenv(listenerNamesEnvName); err != nil {
@@ -147,7 +139,7 @@ func fileCount() (int, error) {
 
 	listenerCountStr, listenerCountSet := os.LookupEnv(listenerCountEnvName)
 	if !listenerCountSet {
-		return 0, errListenerCountNotSet
+		return 0, fmt.Errorf("env LISTEN_FDS not set")
 	}
 
 	listenerCount, err := strconv.Atoi(listenerCountStr)

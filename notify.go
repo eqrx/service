@@ -14,7 +14,7 @@
 package service
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -23,15 +23,12 @@ import (
 // notifySocketEnvName is the env name that contains the path to the systemd notify socket.
 const notifySocketEnvName = "NOTIFY_SOCKET"
 
-// errNotifyNotSet indicates that we are not running as a systemd notify service.
-var errNotifyNotSet = errors.New("env NOTIFY_SOCKET not set")
-
 // newNotifySocket creates a new systemd notify socket.
 func newNotifySocket() (*net.UnixConn, error) {
 	notifySocket, hasNotifySocket := os.LookupEnv(notifySocketEnvName)
 
 	if !hasNotifySocket {
-		return nil, errNotifyNotSet
+		return nil, fmt.Errorf("env NOTIFY_SOCKET not set")
 	}
 
 	if err := os.Unsetenv(notifySocketEnvName); err != nil {
@@ -70,6 +67,22 @@ func (s Service) MarkStopping() error {
 func (s Service) MarkStatus(status string) error {
 	if _, err := s.notify.Write([]byte("STATUS=" + status)); err != nil {
 		return fmt.Errorf("write to systemd notify: %w", err)
+	}
+
+	return nil
+}
+
+// RunNotify marks the service as running, blocks until the given context is cancelled
+// and then marks the service as shutting down.
+func (s Service) RunNotify(ctx context.Context) error {
+	if err := s.MarkReady(); err != nil {
+		return fmt.Errorf("mark service ready: %w", err)
+	}
+
+	<-ctx.Done()
+
+	if err := s.MarkStopping(); err != nil {
+		return fmt.Errorf("mark service stopping: %w", err)
 	}
 
 	return nil

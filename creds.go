@@ -35,7 +35,12 @@ func CredsDir() (string, error) {
 }
 
 // UnmarshalYAMLCreds unmarshals the YAML credential file called name into dst.
-func (s Service) UnmarshalYAMLCreds(dst interface{}, name string) error {
+func (s Service) UnmarshalYAMLCreds(name string, dst interface{}) error {
+	return UnmarshalYAMLCreds(name, dst)
+}
+
+// UnmarshalYAMLCreds unmarshals the YAML credential file called name into dst.
+func UnmarshalYAMLCreds(name string, dst interface{}) error {
 	dir, err := CredsDir()
 	if err != nil {
 		return err

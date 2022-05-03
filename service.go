@@ -43,21 +43,21 @@ func (s Service) Listeners() ([]net.Listener, error) {
 }
 
 // New creates a new Service instance to interface with systemd.
-func New() (*Service, error) {
+func New() (Service, error) {
 	notify, err := newNotifySocket()
 	if err != nil {
-		return nil, fmt.Errorf("systemd notify: %w", err)
+		return Service{}, fmt.Errorf("systemd notify: %w", err)
 	}
 
 	listeners, err := socket.Listeners()
 	if err != nil {
-		return nil, fmt.Errorf("systemd socket activation: %w", err)
+		return Service{}, fmt.Errorf("systemd socket activation: %w", err)
 	}
 
 	journalSink, err := journalr.NewSink()
 	if err != nil {
-		return nil, fmt.Errorf("systemd journald: %w", err)
+		return Service{}, fmt.Errorf("systemd journald: %w", err)
 	}
 
-	return &Service{notify, listeners, journalSink}, nil
+	return Service{notify, listeners, journalSink}, nil
 }

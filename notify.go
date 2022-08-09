@@ -15,6 +15,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -23,12 +24,15 @@ import (
 // notifySocketEnvName is the env name that contains the path to the systemd notify socket.
 const notifySocketEnvName = "NOTIFY_SOCKET"
 
+// ErrEnvMissing indicates a required environment variable is not set.
+var ErrEnvMissing = errors.New("environment variable missing")
+
 // newNotifySocket creates a new systemd notify socket.
 func newNotifySocket() (*net.UnixConn, error) {
 	notifySocket, hasNotifySocket := os.LookupEnv(notifySocketEnvName)
 
 	if !hasNotifySocket {
-		return nil, fmt.Errorf("env NOTIFY_SOCKET not set")
+		return nil, fmt.Errorf("%w: %s", ErrEnvMissing, notifySocketEnvName)
 	}
 
 	if err := os.Unsetenv(notifySocketEnvName); err != nil {

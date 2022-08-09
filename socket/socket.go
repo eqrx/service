@@ -15,6 +15,7 @@
 package socket
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -34,6 +35,9 @@ const (
 	// listenFdsStart indicates which fd index is the first socket passed by systemd.
 	listenFdsStart = 3
 )
+
+// ErrEnvMissing indicates a required environment variable is not set.
+var ErrEnvMissing = errors.New("environment variable missing")
 
 // Listeners returnes listeners passed by systemd.
 func Listeners() ([]net.Listener, error) {
@@ -102,7 +106,7 @@ func files() ([]*os.File, error) {
 
 	listenerNamesStr, listenerNamesSet := os.LookupEnv(listenerNamesEnvName)
 	if !listenerNamesSet {
-		return []*os.File{}, fmt.Errorf("env LISTEN_FDNAMES not set")
+		return []*os.File{}, fmt.Errorf("%w: %s", ErrEnvMissing, listenerNamesEnvName)
 	}
 
 	if err := os.Unsetenv(listenerNamesEnvName); err != nil {
@@ -139,7 +143,7 @@ func fileCount() (int, error) {
 
 	listenerCountStr, listenerCountSet := os.LookupEnv(listenerCountEnvName)
 	if !listenerCountSet {
-		return 0, fmt.Errorf("env LISTEN_FDS not set")
+		return 0, fmt.Errorf("%w: %s", ErrEnvMissing, listenerCountEnvName)
 	}
 
 	listenerCount, err := strconv.Atoi(listenerCountStr)

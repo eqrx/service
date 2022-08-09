@@ -21,31 +21,26 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const credDirEnvName = "CREDENTIALS_DIRECTORY"
-
-// CredsDir returns the path to the directory where systemd credentials reside.
-// An error is returned if systemd did not st the env var CREDENTIALS_DIRECTORY.
-func CredsDir() (string, error) {
-	credsDir, ok := os.LookupEnv(credDirEnvName)
-	if !ok {
-		return "", fmt.Errorf("env CREDENTIALS_DIRECTORY not set")
+// CredPath returns the path credentials that contains systemd credentials.
+func (s Service) CredPath(name string) string {
+	if s.credsDir == "" {
+		panic("credentials directory not set by systemd")
 	}
 
-	return credsDir, nil
+	return s.credsDir + "/" + name
 }
 
 // UnmarshalYAMLCreds unmarshals the YAML credential file called name into dst.
 func (s Service) UnmarshalYAMLCreds(name string, dst interface{}) error {
-	return UnmarshalYAMLCreds(name, dst)
+	if s.credsDir == "" {
+		panic("credentials directory not set by systemd")
+	}
+
+	return UnmarshalYAMLCreds(s.credsDir, name, dst)
 }
 
 // UnmarshalYAMLCreds unmarshals the YAML credential file called name into dst.
-func UnmarshalYAMLCreds(name string, dst interface{}) error {
-	dir, err := CredsDir()
-	if err != nil {
-		return err
-	}
-
+func UnmarshalYAMLCreds(dir, name string, dst interface{}) error {
 	credFile, err := os.Open(path.Join(dir, name))
 	if err != nil {
 		return fmt.Errorf("open cred file: %w", err)

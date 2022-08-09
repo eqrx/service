@@ -17,47 +17,100 @@ package service
 import (
 	"fmt"
 	"net"
+	"os"
 
 	"eqrx.net/journalr"
 	"eqrx.net/service/socket"
 	"github.com/go-logr/logr"
 )
 
+const (
+	credDirEnvName    = "CREDENTIALS_DIRECTORY"
+	stateDirEnvName   = "STATE_DIRECTORY"
+	runtimeDirEnvName = "RUNTIME_DIRECTORY"
+)
+
 // Service allows interfacing with systemd.
 type Service struct {
-	notify    *net.UnixConn
-	listeners []net.Listener
-	journal   *journalr.Sink
+	notify     *net.UnixConn
+	listeners  []net.Listener
+	journal    *journalr.Sink
+	stateDir   string
+	credsDir   string
+	runtimeDir string
 }
 
-// Journal returns a logr.Logger that writes structured logs to the systemd journal.
+// Journal returns a [logr.Logger] that writes structured logs to the systemd journal.
 func (s Service) Journal() logr.Logger { return logr.New(s.journal) }
 
 // Listeners returns listeners passed by systemd via socket activation.
-func (s Service) Listeners() ([]net.Listener, error) {
+func (s Service) Listeners() []net.Listener {
 	if len(s.listeners) == 0 {
-		return s.listeners, fmt.Errorf("no listeners passed by systemd")
+		panic("no listeners passed by systemd")
 	}
 
-	return s.listeners, nil
+	return s.listeners
 }
 
-// New creates a new Service instance to interface with systemd.
-func New() (Service, error) {
-	notify, err := newNotifySocket()
-	if err != nil {
-		return Service{}, fmt.Errorf("systemd notify: %w", err)
+// StateDirectory is the state directory set by systemd.
+// Panics if not set by systemd.
+func (s Service) StateDirectory() string {
+	if s.stateDir == "" {
+		panic("state dir not set")
 	}
 
-	listeners, err := socket.Listeners()
+	return s.stateDir
+}
+
+// RuntimeDirectory is the runtime directory set by systemd.
+// Panics if not set by systemd.
+func (s Service) RuntimeDirectory() string {
+	if s.runtimeDir == "" {
+		panic("runtime dir not set")
+	}
+
+	return s.runtimeDir
+}
+
+var instance Service
+
+// Instance returns the instance of [Service].
+// Panics if service is not set up.
+func Instance() Service {
+	if instance.journal == nil {
+		panic("service not set up")
+	}
+
+	return instance
+}
+
+// Setup creates a new Service instance to interface with systemd.
+// The result can be received by calling [Instance].
+func Setup() error {
+	if instance.journal != nil {
+		panic("service already set up")
+	}
+
+	notify, err := newNotifySocket()
 	if err != nil {
-		return Service{}, fmt.Errorf("systemd socket activation: %w", err)
+		return fmt.Errorf("systemd notify: %w", err)
 	}
 
 	journalSink, err := journalr.NewSink()
 	if err != nil {
-		return Service{}, fmt.Errorf("systemd journald: %w", err)
+		return fmt.Errorf("systemd journald: %w", err)
 	}
 
-	return Service{notify, listeners, journalSink}, nil
+	listeners, err := socket.Listeners()
+	if err != nil {
+		return fmt.Errorf("systemd socket activation: %w", err)
+	}
+
+	stateDir := os.Getenv(stateDirEnvName)
+	credsDir := os.Getenv(credDirEnvName)
+	runtimeDir := os.Getenv(runtimeDirEnvName)
+
+	instance = Service{notify, listeners, journalSink, stateDir, credsDir, runtimeDir}
+
+	return nil
 }

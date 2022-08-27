@@ -93,17 +93,17 @@ func Setup() error {
 
 	notify, err := newNotifySocket()
 	if err != nil {
-		return fmt.Errorf("systemd notify: %w", err)
+		return fmt.Errorf("setup service: %w", err)
 	}
 
 	journalSink, err := journalr.NewSink()
 	if err != nil {
-		return fmt.Errorf("systemd journald: %w", err)
+		return fmt.Errorf("setup service: %w", err)
 	}
 
 	listeners, err := socket.Listeners()
 	if err != nil {
-		return fmt.Errorf("systemd socket activation: %w", err)
+		return fmt.Errorf("setup service: %w", err)
 	}
 
 	stateDir := os.Getenv(stateDirEnvName)

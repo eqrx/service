@@ -55,7 +55,7 @@ func LoadCred(dir, name string) ([]byte, error) {
 		return nil, fmt.Errorf("load cred: %w", err)
 	}
 
-	return data, err
+	return data, nil
 }
 
 // UnmarshalYAMLCred unmarshals the YAML credential file called name into dst.
